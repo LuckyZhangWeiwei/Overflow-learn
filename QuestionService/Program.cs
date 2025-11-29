@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using QuestionService.Data;
+using QuestionService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,15 +11,16 @@ builder.Services.AddOpenApi();
 builder.AddServiceDefaults();
 builder.Services.AddAuthentication()
     .AddKeycloakJwtBearer(
-        serviceName: "keycloak", 
+        serviceName: "keycloak",
         realm: "overflow-learn",
         options =>
         {
             options.RequireHttpsMetadata = false;
             options.Audience = "overflow-learn";
         }
-        );
-
+    );
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<TagService>();
 builder.AddNpgsqlDbContext<QuestionDbContext>("questionDb");
 
 var app = builder.Build();
@@ -35,7 +37,7 @@ app.MapControllers();
 
 app.MapDefaultEndpoints();
 
-using var scope = app.Services.CreateScope(); 
+using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
 try
 {
