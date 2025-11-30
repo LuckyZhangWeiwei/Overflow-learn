@@ -1,3 +1,5 @@
+using SearchService.Data;
+using Typesense;
 using Typesense.Setup;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,12 +12,12 @@ var typesenseUri = builder.Configuration["services:typesense:typesense:0"];
 if (string.IsNullOrEmpty(typesenseUri))
     throw new InvalidOperationException("Typesense URI not found in config");
 
-var uri = new Uri(typesenseUri);
-
 var typesenseApiKey = builder.Configuration["typesense-api-key"];
 
 if (string.IsNullOrEmpty(typesenseApiKey))
     throw new InvalidOperationException("Typesense API key not found in config");
+
+var uri = new Uri(typesenseUri);
 
 builder.Services.AddTypesenseClient(config =>
 {
@@ -35,5 +37,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapDefaultEndpoints();
+
+using var scope = app.Services.CreateScope();
+var client = scope.ServiceProvider.GetRequiredService<ITypesenseClient>();
+await SearchInitializer.EnsureIndexExists(client);
 
 app.Run();
