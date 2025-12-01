@@ -1,6 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using QuestionService.Data;
 using QuestionService.Services;
+using Wolverine;
+using Wolverine.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +24,23 @@ builder.Services.AddAuthentication()
         }
     );
 builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<TagService>();
+
 builder.AddNpgsqlDbContext<QuestionDbContext>("questionDb");
+
+builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
+{
+    traceProviderBuilder.SetResourceBuilder(ResourceBuilder.CreateDefault()
+            .AddService(builder.Environment.ApplicationName))
+        .AddSource("Wolverine");
+});
+
+builder.Host.UseWolverine(opts =>
+{
+    opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
+    opts.PublishAllMessages().ToRabbitExchange("questions");
+});
 
 var app = builder.Build();
 
