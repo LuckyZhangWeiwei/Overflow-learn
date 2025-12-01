@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,12 +7,13 @@ using QuestionService.Data;
 using QuestionService.DTOs;
 using QuestionService.Models;
 using QuestionService.Services;
+using Wolverine;
 
 namespace QuestionService.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class QuestionsController(QuestionDbContext db /*,IMessageBus bus*/, TagService tagService) : ControllerBase
+public class QuestionsController(QuestionDbContext db, IMessageBus bus, TagService tagService) : ControllerBase
 {
     public async Task<ActionResult<Question>> CreateQuestion(CreateQuestionDto dto)
     {
@@ -33,6 +35,9 @@ public class QuestionsController(QuestionDbContext db /*,IMessageBus bus*/, TagS
 
         db.Questions.Add(question);
         await db.SaveChangesAsync();
+
+        await bus.PublishAsync(new QuestionCreated(question.Id, question.Title, question.Content, question.CreatedAt,
+            question.TagSlugs));
 
         return Created($"/questions/{question.Id}", question);
     }
