@@ -1,13 +1,9 @@
-using System.Net.Sockets;
+using Common;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Polly;
 using QuestionService.Data;
 using QuestionService.Services;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Exceptions;
-using Wolverine;
 using Wolverine.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,16 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.AddServiceDefaults();
-builder.Services.AddAuthentication()
-    .AddKeycloakJwtBearer(
-        serviceName: "keycloak",
-        realm: "overflow-learn",
-        options =>
-        {
-            options.RequireHttpsMetadata = false;
-            options.Audience = "overflow-learn";
-        }
-    );
+builder.Services.AddKeyCloakAuthentication();
 builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<TagService>();
@@ -40,33 +27,9 @@ builder.Services.AddOpenTelemetry().WithTracing(traceProviderBuilder =>
         .AddSource("Wolverine");
 });
 
-var retryPolicy = Policy.Handle<BrokerUnreachableException>()
-    .Or<SocketException>()
-    .WaitAndRetryAsync(
-        retryCount: 5,
-        retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-        (exception, timeSpan, retryAttempt) =>
-        {
-            Console.WriteLine(
-                $"Retry attempt {retryAttempt} failed. Retrying in {timeSpan.Seconds} seconds...");
-        });
-
-await retryPolicy.ExecuteAsync(async () =>
+await builder.UseWolverineWithRabbitMqAsync(opts =>
 {
-    var endpoint = builder.Configuration.GetConnectionString("messaging")
-                   ?? throw new ArgumentNullException("messaging connection string not found");
-
-    var factory = new ConnectionFactory
-    {
-        Uri = new Uri(endpoint)
-    };
-
-    await using var connection = await factory.CreateConnectionAsync();
-});
-
-builder.Host.UseWolverine(opts =>
-{
-    opts.UseRabbitMqUsingNamedConnection("messaging").AutoProvision();
+    opts.ApplicationAssembly = typeof(Program).Assembly;
     opts.PublishAllMessages().ToRabbitExchange("questions");
 });
 
