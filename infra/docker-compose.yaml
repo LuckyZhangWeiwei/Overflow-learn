@@ -19,6 +19,8 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
+      VIRTUAL_HOST: "id.overflow-learn.local"
+      VIRTUAL_PORT: "8080"
     ports:
       - "6001:8080"
     expose:
@@ -179,6 +181,8 @@ services:
       services__search-svc__http__0: "http://search-svc:${SEARCH_SVC_PORT}"
       SEARCH-SVC_HTTPS: "https://search-svc:${SEARCH_SVC_PORT}"
       ASPNETCORE_URLS: "http://*:8001"
+      VIRTUAL_HOST: "api.overflow-learn.local"
+      VIRTUAL_PORT: "8001"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://production-dashboard:18889"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "gateway"
@@ -186,6 +190,17 @@ services:
       - "8001:8001"
     expose:
       - "5000"
+    networks:
+      - "aspire"
+  nginx-proxy:
+    image: "nginxproxy/nginx-proxy:1.8"
+    ports:
+      - "80:80"
+    volumes:
+      - type: "bind"
+        target: "/tmp/docker.sock"
+        source: "/var/run/docker.sock"
+        read_only: true
     networks:
       - "aspire"
 networks:
