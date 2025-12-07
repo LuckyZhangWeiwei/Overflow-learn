@@ -29,6 +29,10 @@ services:
         target: "/opt/keycloak/data"
         source: "keycloak-data"
         read_only: false
+      - type: "bind"
+        target: "/opt/keycloak/data/import"
+        source: "D:\\dotnet\\Overflow-learn\\infra\\realms"
+        read_only: true
     networks:
       - "aspire"
   postgres:
