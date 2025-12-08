@@ -10,10 +10,10 @@ var keycloak = builder.AddKeycloak("keycloak", 6001)
     .WithRealmImport("../infra/realms")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-    .WithEndpoint(6001, 8080, "keycloak", isExternal: true)
+    // .WithEndpoint(6001, 8080, "keycloak", isExternal: true)
     .WithEnvironment("VIRTUAL_HOST", "id.overflow-learn.local")
     .WithEnvironment("VIRTUAL_PORT", "8080");
-;
+
 
 var postgres = builder.AddPostgres("postgres", port: 5432)
     .WithDataVolume("postgres-data")
