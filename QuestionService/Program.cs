@@ -41,7 +41,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
