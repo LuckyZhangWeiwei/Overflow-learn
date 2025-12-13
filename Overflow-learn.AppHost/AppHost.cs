@@ -5,14 +5,21 @@ var builder = DistributedApplication.CreateBuilder(args);
 var compose = builder.AddDockerComposeEnvironment("production")
     .WithDashboard(dashboard => dashboard.WithHostPort(8080));
 
+
 var keycloak = builder.AddKeycloak("keycloak", 6001)
     .WithDataVolume("keycloak-data")
     .WithRealmImport("../infra/realms")
     .WithEnvironment("KC_HTTP_ENABLED", "true")
     .WithEnvironment("KC_HOSTNAME_STRICT", "false")
-    // .WithEndpoint(6001, 8080, "keycloak", isExternal: true)
     .WithEnvironment("VIRTUAL_HOST", "id.overflow-learn.local")
     .WithEnvironment("VIRTUAL_PORT", "8080");
+
+// 只在「非 Development」（即 docker compose / production）下
+// 才显式声明 endpoint
+if (!builder.Environment.IsDevelopment())
+{
+    keycloak.WithEndpoint(6001, 8080, "keycloak", isExternal: true);
+}
 
 
 var postgres = builder.AddPostgres("postgres", port: 5432)
